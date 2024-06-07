@@ -102,8 +102,8 @@ import traceback
 from typing import Generator
 
 now_dir = os.getcwd()
-sys.path.append(now_dir)
-sys.path.append("%s/GPT_SoVITS" % (now_dir))
+sys.path.insert(0, now_dir)
+sys.path.insert(0, "%s/GPT_SoVITS" % (now_dir))
 
 import argparse
 import subprocess
@@ -113,8 +113,11 @@ import numpy as np
 import soundfile as sf
 from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File
 import uvicorn
+import nest_asyncio
+from pyngrok import ngrok
 from io import BytesIO
 from tools.i18n.i18n import I18nAuto
 from GPT_SoVITS.TTS_infer_pack.TTS import TTS, TTS_Config
@@ -143,6 +146,13 @@ tts_config = TTS_Config(config_path)
 tts_pipeline = TTS(tts_config)
 
 APP = FastAPI()
+APP.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 class TTS_Request(BaseModel):
     text: str = None
     text_lang: str = None
@@ -446,6 +456,10 @@ async def set_sovits_weights(weights_path: str = None):
 
 if __name__ == "__main__":
     try:
+        ngrok.set_auth_token("2hSO2jAEzoSrpP9vCgy14eHRkRD_bq1UfUL3gMzMqrcPxnub")
+        ngrok_tunnel = ngrok.connect(port)
+        print('Public URL:', ngrok_tunnel.public_url)
+        nest_asyncio.apply()
         uvicorn.run(app="api_v2:APP", host=host, port=port, workers=1)
     except Exception as e:
         traceback.print_exc()
